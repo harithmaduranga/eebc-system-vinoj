@@ -527,129 +527,129 @@ function ComplianceTab() {
   );
 }
 
-// ── Upload Tab ────────────────────────────────────────────────────────────────
-function UploadTab() {
-  const [file, setFile] = useState(null);
-  const [status, setStatus] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [vectorStatus, setVectorStatus] = useState(null);
-  const [dragging, setDragging] = useState(false);
-  const inputRef = useRef(null);
+// // ── Upload Tab ────────────────────────────────────────────────────────────────
+// function UploadTab() {
+//   const [file, setFile] = useState(null);
+//   const [status, setStatus] = useState(null);
+//   const [uploading, setUploading] = useState(false);
+//   const [vectorStatus, setVectorStatus] = useState(null);
+//   const [dragging, setDragging] = useState(false);
+//   const inputRef = useRef(null);
 
-  useEffect(() => {
-    fetchVectorStatus();
-  }, []);
+//   useEffect(() => {
+//     fetchVectorStatus();
+//   }, []);
 
-  const fetchVectorStatus = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/vector/status`);
-      setVectorStatus(res.data);
-    } catch {}
-  };
+//   const fetchVectorStatus = async () => {
+//     try {
+//       const res = await axios.get(`${API_BASE}/vector/status`);
+//       setVectorStatus(res.data);
+//     } catch {}
+//   };
 
-  const upload = async () => {
-    if (!file) return;
-    setUploading(true);
-    setStatus(null);
-    const form = new FormData();
-    form.append('file', file);
-    try {
-      const res = await axios.post(`${API_BASE}/upload`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setStatus({ type: 'success', data: res.data });
-      fetchVectorStatus();
-    } catch (err) {
-      setStatus({ type: 'error', msg: err.response?.data?.detail || err.message });
-    } finally {
-      setUploading(false);
-      setFile(null);
-    }
-  };
+//   const upload = async () => {
+//     if (!file) return;
+//     setUploading(true);
+//     setStatus(null);
+//     const form = new FormData();
+//     form.append('file', file);
+//     try {
+//       const res = await axios.post(`${API_BASE}/upload`, form, {
+//         headers: { 'Content-Type': 'multipart/form-data' },
+//       });
+//       setStatus({ type: 'success', data: res.data });
+//       fetchVectorStatus();
+//     } catch (err) {
+//       setStatus({ type: 'error', msg: err.response?.data?.detail || err.message });
+//     } finally {
+//       setUploading(false);
+//       setFile(null);
+//     }
+//   };
 
-  const onDrop = (e) => {
-    e.preventDefault();
-    setDragging(false);
-    const f = e.dataTransfer.files[0];
-    if (f?.name.endsWith('.pdf')) setFile(f);
-  };
+//   const onDrop = (e) => {
+//     e.preventDefault();
+//     setDragging(false);
+//     const f = e.dataTransfer.files[0];
+//     if (f?.name.endsWith('.pdf')) setFile(f);
+//   };
 
-  return (
-    <div className="upload-layout">
-      <div className="section-header">
-        <h2 className="section-title">EEBC Knowledge Base</h2>
-        <p className="section-subtitle">Upload the EEBC 2021 PDF to populate the vector database</p>
-      </div>
+//   return (
+//     <div className="upload-layout">
+//       <div className="section-header">
+//         <h2 className="section-title">EEBC Knowledge Base</h2>
+//         <p className="section-subtitle">Upload the EEBC 2021 PDF to populate the vector database</p>
+//       </div>
 
-      {vectorStatus && (
-        <div className="vector-status-card">
-          <div className="vs-icon">🗄️</div>
-          <div>
-            <p className="vs-title">Vector Store Status</p>
-            <p className="vs-count"><strong>{vectorStatus.document_chunks?.toLocaleString()}</strong> document chunks indexed</p>
-            <p className="vs-collection">Collection: {vectorStatus.collection}</p>
-          </div>
-          <span className={`vs-badge ${vectorStatus.document_chunks > 0 ? 'ok' : 'empty'}`}>
-            {vectorStatus.document_chunks > 0 ? '✅ Ready' : '⚠️ Empty'}
-          </span>
-        </div>
-      )}
+//       {vectorStatus && (
+//         <div className="vector-status-card">
+//           <div className="vs-icon">🗄️</div>
+//           <div>
+//             <p className="vs-title">Vector Store Status</p>
+//             <p className="vs-count"><strong>{vectorStatus.document_chunks?.toLocaleString()}</strong> document chunks indexed</p>
+//             <p className="vs-collection">Collection: {vectorStatus.collection}</p>
+//           </div>
+//           <span className={`vs-badge ${vectorStatus.document_chunks > 0 ? 'ok' : 'empty'}`}>
+//             {vectorStatus.document_chunks > 0 ? '✅ Ready' : '⚠️ Empty'}
+//           </span>
+//         </div>
+//       )}
 
-      <div
-        className={`drop-zone ${dragging ? 'dragging' : ''} ${file ? 'has-file' : ''}`}
-        onDragOver={e => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
-        onClick={() => inputRef.current?.click()}
-      >
-        <input ref={inputRef} type="file" accept=".pdf" style={{ display: 'none' }}
-               onChange={e => setFile(e.target.files[0])} />
-        {file ? (
-          <>
-            <div className="drop-icon">📄</div>
-            <p className="drop-filename">{file.name}</p>
-            <p className="drop-size">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-          </>
-        ) : (
-          <>
-            <div className="drop-icon">☁️</div>
-            <p className="drop-text">Drop EEBC 2021 PDF here or click to browse</p>
-            <p className="drop-hint">PDF files only</p>
-          </>
-        )}
-      </div>
+//       <div
+//         className={`drop-zone ${dragging ? 'dragging' : ''} ${file ? 'has-file' : ''}`}
+//         onDragOver={e => { e.preventDefault(); setDragging(true); }}
+//         onDragLeave={() => setDragging(false)}
+//         onDrop={onDrop}
+//         onClick={() => inputRef.current?.click()}
+//       >
+//         <input ref={inputRef} type="file" accept=".pdf" style={{ display: 'none' }}
+//                onChange={e => setFile(e.target.files[0])} />
+//         {file ? (
+//           <>
+//             <div className="drop-icon">📄</div>
+//             <p className="drop-filename">{file.name}</p>
+//             <p className="drop-size">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+//           </>
+//         ) : (
+//           <>
+//             <div className="drop-icon">☁️</div>
+//             <p className="drop-text">Drop EEBC 2021 PDF here or click to browse</p>
+//             <p className="drop-hint">PDF files only</p>
+//           </>
+//         )}
+//       </div>
 
-      {file && (
-        <button className="upload-btn" onClick={upload} disabled={uploading}>
-          {uploading ? <><span className="spinner" /> Ingesting into vector DB...</> : '📤 Upload & Ingest'}
-        </button>
-      )}
+//       {file && (
+//         <button className="upload-btn" onClick={upload} disabled={uploading}>
+//           {uploading ? <><span className="spinner" /> Ingesting into vector DB...</> : '📤 Upload & Ingest'}
+//         </button>
+//       )}
 
-      {status?.type === 'success' && (
-        <div className="status-card success">
-          <p>✅ <strong>{status.data.filename}</strong> ingested successfully!</p>
-          <p>{status.data.chunks_created} chunks created in vector store</p>
-        </div>
-      )}
-      {status?.type === 'error' && (
-        <div className="status-card error">
-          <p>❌ Upload failed: {status.msg}</p>
-        </div>
-      )}
+//       {status?.type === 'success' && (
+//         <div className="status-card success">
+//           <p>✅ <strong>{status.data.filename}</strong> ingested successfully!</p>
+//           <p>{status.data.chunks_created} chunks created in vector store</p>
+//         </div>
+//       )}
+//       {status?.type === 'error' && (
+//         <div className="status-card error">
+//           <p>❌ Upload failed: {status.msg}</p>
+//         </div>
+//       )}
 
-      <div className="ingest-instructions">
-        <h3>📋 Alternative: Bulk Ingestion via CLI</h3>
-        <div className="code-block">
-          <span># Place EEBC 2021 PDF in ./Data folder, then run:</span>
-          <span>python ingest.py</span>
-          <span></span>
-          <span># Or watch mode (auto-processes new files):</span>
-          <span>python ingest.py --watch</span>
-        </div>
-      </div>
-    </div>
-  );
-}
+//       <div className="ingest-instructions">
+//         <h3>📋 Alternative: Bulk Ingestion via CLI</h3>
+//         <div className="code-block">
+//           <span># Place EEBC 2021 PDF in ./Data folder, then run:</span>
+//           <span>python ingest.py</span>
+//           <span></span>
+//           <span># Or watch mode (auto-processes new files):</span>
+//           <span>python ingest.py --watch</span>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 // ── About Tab ─────────────────────────────────────────────────────────────────
 function AboutTab() {
