@@ -1,0 +1,73 @@
+/* ── Design System ─────────────────────────────────────────── */
+:root {
+  --bg-deep:      #060d1a;
+  --bg-surface:   #0c1a2e;
+  --bg-card:      #0f2040;
+  --bg-input:     #0a1628;
+  --accent:       #00d4ff;
+  --accent-dim:   rgba(0, 212, 255, 0.15);
+  --accent-glow:  rgba(0, 212, 255, 0.35);
+  --amber:        #f5a623;
+  --amber-dim:    rgba(245, 166, 35, 0.15);
+  --green:        #00e676;
+  --green-dim:    rgba(0, 230, 118, 0.12);
+  --red:          #ff4d6d;
+  --red-dim:      rgba(255, 77, 109, 0.12);
+  --purple:       #9c6cfb;
+  --purple-dim:   rgba(156, 108, 251, 0.12);
+  --text-primary: #e8f4fd;
+  --text-secondary: #7a9cc0;
+  --text-muted:   #3d5a7a;
+  --border:       rgba(0, 212, 255, 0.12);
+  --border-bright:rgba(0, 212, 255, 0.35);
+  --font-body:    'Sora', sans-serif;
+  --font-mono:    'Space Mono', monospace;
+  --radius:       12px;
+  --radius-lg:    20px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* Selection */
+::selection { background: var(--accent-dim); color: var(--accent); }
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px var(--accent-glow); }
+  50%       { box-shadow: 0 0 24px var(--accent-glow), 0 0 48px rgba(0,212,255,0.15); }
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes thinking {
+  0%   { opacity: 0.4; transform: scale(0.8); }
+  50%  { opacity: 1;   transform: scale(1.1); }
+  100% { opacity: 0.4; transform: scale(0.8); }
+}
+
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
