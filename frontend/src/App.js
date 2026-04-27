@@ -18,7 +18,7 @@ const AGENTS = [
   { id: 'Electrical Power Specialist',    icon: '⚡', label: 'Electrical Specialist',   color: '#e040fb', section: 'Sec 8' },
 ];
 
-const TABS = ['💬 Chat', '📐 ETTV/RTTV', '📋 Compliance', '📤 Upload', '📖 About'];
+const TABS = ['💬 Chat', '📐 ETTV/RTTV', '📋 Compliance', '📖 About'];
 
 // ── Typing indicator ──────────────────────────────────────────────────────────
 function TypingDots() {
@@ -361,6 +361,11 @@ function ComplianceTab() {
   const [result, setResult] = useState('');
   const [solutions, setSolutions] = useState('');
   const [loading, setLoading] = useState(false);
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef(null);
 
   const QUICK_CHECKS = [
     { label: 'Wall U-value check', q: 'My external wall has a U-value of 0.8 W/m²·K. Is this compliant with EEBC 2021?' },
@@ -369,6 +374,35 @@ function ComplianceTab() {
     { label: 'Chiller COP check', q: 'My chiller has a COP of 4.2. Does it comply with EEBC 2021 Section 6?' },
     { label: 'Roof U-value', q: 'Flat roof U-value is 0.6 W/m²·K. Is it compliant with EEBC 2021?' },
   ];
+
+  const uploadAndCheck = async () => {
+    if (!file) return;
+    setUploading(true);
+    setUploadStatus(null);
+    const form = new FormData();
+    form.append('file', file);
+    try {
+      const res = await axios.post(`${API_BASE}/upload`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setUploadStatus({ type: 'success', data: res.data });
+      setFile(null);
+      const autoQuery = `The document "${res.data.filename}" has been uploaded. Please analyze its content and check if it complies with EEBC 2021 standards. Identify any non-compliant parameters and flag them clearly.`;
+      setQuestion(autoQuery);
+      check(autoQuery);
+    } catch (err) {
+      setUploadStatus({ type: 'error', msg: err.response?.data?.detail || err.message });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    const f = e.dataTransfer.files[0];
+    if (f?.name.endsWith('.pdf')) setFile(f);
+  };
 
   const check = async (q) => {
     const query = q || question.trim();
@@ -395,6 +429,52 @@ function ComplianceTab() {
       <div className="section-header">
         <h2 className="section-title">Compliance Checker + Solution Advisor</h2>
         <p className="section-subtitle">Check your building parameters against EEBC 2021 — get instant compliance verdict and remediation advice</p>
+      </div>
+
+      <div className="card upload-compliance-card">
+        <h3 className="card-title">📄 Upload PDF for Compliance Check</h3>
+        <p style={{ color: '#8899aa', fontSize: '0.85rem', marginBottom: '1rem' }}>
+          Upload a building document PDF to automatically check its compliance with EEBC 2021
+        </p>
+        <div
+          className={`drop-zone ${dragging ? 'dragging' : ''} ${file ? 'has-file' : ''}`}
+          style={{ marginBottom: '1rem' }}
+          onDragOver={e => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          onClick={() => inputRef.current?.click()}
+        >
+          <input ref={inputRef} type="file" accept=".pdf" style={{ display: 'none' }}
+                 onChange={e => setFile(e.target.files[0])} />
+          {file ? (
+            <>
+              <div className="drop-icon">📄</div>
+              <p className="drop-filename">{file.name}</p>
+              <p className="drop-size">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+            </>
+          ) : (
+            <>
+              <div className="drop-icon">☁️</div>
+              <p className="drop-text">Drop PDF here or click to browse</p>
+              <p className="drop-hint">PDF files only</p>
+            </>
+          )}
+        </div>
+        {file && (
+          <button className="upload-btn" onClick={uploadAndCheck} disabled={uploading}>
+            {uploading ? <><span className="spinner" /> Uploading & checking...</> : '📤 Upload & Check Compliance'}
+          </button>
+        )}
+        {uploadStatus?.type === 'success' && (
+          <div className="status-card success" style={{ marginTop: '0.75rem' }}>
+            <p>✅ <strong>{uploadStatus.data.filename}</strong> ingested — running compliance check below...</p>
+          </div>
+        )}
+        {uploadStatus?.type === 'error' && (
+          <div className="status-card error" style={{ marginTop: '0.75rem' }}>
+            <p>❌ Upload failed: {uploadStatus.msg}</p>
+          </div>
+        )}
       </div>
 
       <div className="quick-checks">
@@ -670,8 +750,7 @@ export default function App() {
         {tab === 0 && <ChatTab />}
         {tab === 1 && <ETTVTab />}
         {tab === 2 && <ComplianceTab />}
-        {tab === 3 && <UploadTab />}
-        {tab === 4 && <AboutTab />}
+        {tab === 3 && <AboutTab />}
       </main>
     </div>
   );
