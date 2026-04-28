@@ -39,6 +39,7 @@ app = FastAPI(
     title="EEBC 2021 Agentic RAG API",
     description="Orchestrator-driven multi-agent RAG system for EEBC 2021 compliance",
     version="3.0.0",
+    redirect_slashes=False,
 )
 
 # ── CORS ───────────────────────────────────────────────────────────────────────
