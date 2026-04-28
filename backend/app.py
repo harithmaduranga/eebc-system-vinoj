@@ -42,21 +42,24 @@ app = FastAPI(
 )
 
 # ── CORS ───────────────────────────────────────────────────────────────────────
-origins = os.getenv("CORS_ORIGINS", "*").split(",")
-if origins == ["*"]:
+# allow_credentials=True is incompatible with allow_origins=["*"] per the CORS
+# spec — browsers silently drop the response. Use explicit origins + credentials
+# only when CORS_ORIGINS is set; fall back to wildcard without credentials.
+_cors_origins_env = os.getenv("CORS_ORIGINS", "").strip()
+if _cors_origins_env and _cors_origins_env != "*":
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=[o.strip() for o in _cors_origins_env.split(",")],
         allow_credentials=True,
-        allow_methods=["GET", "POST", "OPTIONS", "DELETE"],
+        allow_methods=["*"],
         allow_headers=["*"],
     )
 else:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=True,
-        allow_methods=["*"],
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "OPTIONS", "DELETE"],
         allow_headers=["*"],
     )
 
