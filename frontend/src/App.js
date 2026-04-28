@@ -382,9 +382,7 @@ function ComplianceTab() {
     const form = new FormData();
     form.append('file', file);
     try {
-      const res = await axios.post(`${API_BASE}/upload`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const res = await axios.post(`${API_BASE}/upload`, form);
       setUploadStatus({ type: 'success', data: res.data });
       setFile(null);
       const autoQuery = `The document "${res.data.filename}" has been uploaded. Please analyze its content and check if it complies with EEBC 2021 standards. Identify any non-compliant parameters and flag them clearly.`;
