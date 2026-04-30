@@ -12,7 +12,7 @@ load_dotenv()
 # Initialize Models
 models = Models()
 embeddings = models.embeddings_hf
-print("Using HuggingFace embeddings for ingestion")
+print(f"Using {models.collection_name} embeddings for ingestion")
 
 llm = models.model_groq
 
@@ -23,7 +23,7 @@ check_interval = 10
 
 # Chroma vector store
 vector_store = Chroma(
-    collection_name="documents",
+    collection_name=models.collection_name,
     embedding_function=embeddings,
     persist_directory="./DB/chroma_langchain_db"
 )

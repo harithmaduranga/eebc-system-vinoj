@@ -13,7 +13,6 @@ Endpoints:
 """
 
 import os
-import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List
@@ -41,6 +40,8 @@ app = FastAPI(
     version="3.0.0",
     redirect_slashes=False,
 )
+
+MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_MB", "15")) * 1024 * 1024
 
 # ── CORS ───────────────────────────────────────────────────────────────────────
 # allow_credentials=True is incompatible with allow_origins=["*"] per the CORS
@@ -205,7 +206,7 @@ async def vector_status():
     try:
         models_obj = Models()
         vs = Chroma(
-            collection_name="documents",
+            collection_name=models_obj.collection_name,
             embedding_function=models_obj.embeddings_hf,
             persist_directory="./DB/chroma_langchain_db",
         )
@@ -213,7 +214,7 @@ async def vector_status():
         return {
             "status": "ok",
             "document_chunks": count,
-            "collection": "documents",
+            "collection": models_obj.collection_name,
             "persist_directory": "./DB/chroma_langchain_db",
         }
     except Exception as e:
@@ -235,7 +236,7 @@ async def ingest_eebc():
 
     models_obj = Models()
     vs = Chroma(
-        collection_name="documents",
+        collection_name=models_obj.collection_name,
         embedding_function=models_obj.embeddings_hf,
         persist_directory="./DB/chroma_langchain_db",
     )
@@ -276,12 +277,21 @@ def _ingest_uploaded_pdf(file: UploadFile) -> UploadResponse:
     file_path = upload_dir / f"{upload_id}_{safe_filename}"
 
     try:
+        bytes_written = 0
         with open(file_path, "wb") as buf:
-            shutil.copyfileobj(file.file, buf)
+            while chunk := file.file.read(1024 * 1024):
+                bytes_written += len(chunk)
+                if bytes_written > MAX_UPLOAD_BYTES:
+                    file_path.unlink(missing_ok=True)
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"PDF is too large. Maximum upload size is {MAX_UPLOAD_BYTES // (1024 * 1024)} MB.",
+                    )
+                buf.write(chunk)
 
         models_obj = Models()
         vs = Chroma(
-            collection_name="documents",
+            collection_name=models_obj.collection_name,
             embedding_function=models_obj.embeddings_hf,
             persist_directory="./DB/chroma_langchain_db",
         )

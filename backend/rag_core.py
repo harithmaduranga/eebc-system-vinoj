@@ -176,11 +176,11 @@ def initialize_rag():
     models = Models()
     embeddings = models.embeddings_hf
     llm = models.model_groq
-    print("[INFO] Using HuggingFace embeddings + Groq LLM")
+    print(f"[INFO] Using {models.collection_name} embeddings + Groq LLM")
 
     try:
         vector_store = Chroma(
-            collection_name="documents",
+            collection_name=models.collection_name,
             embedding_function=embeddings,
             persist_directory="./DB/chroma_langchain_db",
         )
@@ -201,7 +201,7 @@ def refresh_vector_store():
         if models is None:
             models = Models()
         vector_store = Chroma(
-            collection_name="documents",
+            collection_name=models.collection_name,
             embedding_function=models.embeddings_hf,
             persist_directory="./DB/chroma_langchain_db",
         )
