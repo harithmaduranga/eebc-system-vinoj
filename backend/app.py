@@ -100,6 +100,18 @@ class UploadResponse(BaseModel):
     status: str
     message: str
     chunks_created: int
+    upload_id: Optional[str] = None
+
+
+class ComplianceUploadCheckResponse(BaseModel):
+    filename: str
+    status: str
+    message: str
+    chunks_created: int
+    upload_id: str
+    compliance_answer: str
+    solution_answer: str
+    timestamp: str
 
 
 class ClearMemoryRequest(BaseModel):
@@ -253,15 +265,15 @@ async def ingest_eebc():
 
 
 # ── Upload endpoint ────────────────────────────────────────────────────────────
-@app.post("/upload", response_model=UploadResponse)
-async def upload_pdf(file: UploadFile = File(...)):
-    """Upload a PDF and ingest it into the RAG vector store."""
-    if not file.filename.endswith(".pdf"):
+def _ingest_uploaded_pdf(file: UploadFile) -> UploadResponse:
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
 
     upload_dir = Path("./Uploads")
     upload_dir.mkdir(exist_ok=True)
-    file_path = upload_dir / file.filename
+    safe_filename = Path(file.filename).name
+    upload_id = str(uuid4())
+    file_path = upload_dir / f"{upload_id}_{safe_filename}"
 
     try:
         with open(file_path, "wb") as buf:
@@ -279,6 +291,15 @@ async def upload_pdf(file: UploadFile = File(...)):
         if not raw_docs:
             raise HTTPException(status_code=400, detail="No content found in PDF")
 
+        for doc in raw_docs:
+            doc.metadata.update(
+                {
+                    "upload_id": upload_id,
+                    "original_filename": safe_filename,
+                    "uploaded_at": datetime.now().isoformat(),
+                }
+            )
+
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000, chunk_overlap=200, separators=["\n\n", "\n", " ", ""]
         )
@@ -288,15 +309,52 @@ async def upload_pdf(file: UploadFile = File(...)):
         refresh_vector_store()
 
         return UploadResponse(
-            filename=file.filename,
+            filename=safe_filename,
             status="success",
             message="PDF uploaded and ingested successfully",
             chunks_created=len(chunks),
+            upload_id=upload_id,
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+@app.post("/upload", response_model=UploadResponse)
+async def upload_pdf(file: UploadFile = File(...)):
+    """Upload a PDF and ingest it into the RAG vector store."""
+    return _ingest_uploaded_pdf(file)
+
+
+@app.post("/compliance/upload-check", response_model=ComplianceUploadCheckResponse)
+async def upload_and_check_compliance(file: UploadFile = File(...)):
+    """Upload a PDF, ingest it, and run compliance analysis against only that PDF."""
+    uploaded = _ingest_uploaded_pdf(file)
+    metadata_filter = {"upload_id": uploaded.upload_id}
+    query = (
+        f'Analyze the uploaded building document "{uploaded.filename}" for EEBC 2021 compliance. '
+        "Use only the uploaded document context. Identify compliant and non-compliant parameters, "
+        "cite relevant EEBC clauses where available, and clearly flag missing information."
+    )
+    solution_query = (
+        f'For the uploaded building document "{uploaded.filename}", recommend corrections for any '
+        "non-compliant or incomplete items found in the compliance analysis."
+    )
+
+    compliance_answer = query_rag(query, "Compliance Checker", metadata_filter=metadata_filter)
+    solution_answer = query_rag(solution_query, "Solution Advisor", metadata_filter=metadata_filter)
+
+    return ComplianceUploadCheckResponse(
+        filename=uploaded.filename,
+        status="success",
+        message="PDF uploaded, ingested, and checked successfully",
+        chunks_created=uploaded.chunks_created,
+        upload_id=uploaded.upload_id,
+        compliance_answer=compliance_answer,
+        solution_answer=solution_answer,
+        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    )
 
 
 # ── Legacy direct-agent endpoint ───────────────────────────────────────────────

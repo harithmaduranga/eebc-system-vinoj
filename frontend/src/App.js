@@ -378,20 +378,25 @@ function ComplianceTab() {
   const uploadAndCheck = async () => {
     if (!file) return;
     setUploading(true);
+    setLoading(true);
     setUploadStatus(null);
+    setResult('');
+    setSolutions('');
     const form = new FormData();
     form.append('file', file);
     try {
-      const res = await axios.post(`${API_BASE}/upload`, form);
+      const res = await axios.post(`${API_BASE}/compliance/upload-check`, form);
       setUploadStatus({ type: 'success', data: res.data });
       setFile(null);
-      const autoQuery = `The document "${res.data.filename}" has been uploaded. Please analyze its content and check if it complies with EEBC 2021 standards. Identify any non-compliant parameters and flag them clearly.`;
+      const autoQuery = `Uploaded document: ${res.data.filename}`;
       setQuestion(autoQuery);
-      check(autoQuery);
+      setResult(res.data.compliance_answer);
+      setSolutions(res.data.solution_answer);
     } catch (err) {
       setUploadStatus({ type: 'error', msg: err.response?.data?.detail || err.message });
     } finally {
       setUploading(false);
+      setLoading(false);
     }
   };
 
@@ -465,7 +470,7 @@ function ComplianceTab() {
         )}
         {uploadStatus?.type === 'success' && (
           <div className="status-card success" style={{ marginTop: '0.75rem' }}>
-            <p>✅ <strong>{uploadStatus.data.filename}</strong> ingested — running compliance check below...</p>
+            <p>✅ <strong>{uploadStatus.data.filename}</strong> ingested and checked ({uploadStatus.data.chunks_created} chunks).</p>
           </div>
         )}
         {uploadStatus?.type === 'error' && (

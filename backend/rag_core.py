@@ -10,6 +10,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_chroma import Chroma
 from models import Models
+from typing import Optional
 
 # Global state
 llm = None
@@ -197,6 +198,8 @@ def refresh_vector_store():
     global vector_store, models, initialized
     print("[INFO] Refreshing vector store after new upload...")
     try:
+        if models is None:
+            models = Models()
         vector_store = Chroma(
             collection_name="documents",
             embedding_function=models.embeddings_hf,
@@ -210,7 +213,7 @@ def refresh_vector_store():
         return False
 
 
-def query_rag(question: str, agent_type: str = "EEBC Expert") -> str:
+def query_rag(question: str, agent_type: str = "EEBC Expert", metadata_filter: Optional[dict] = None) -> str:
     global vector_store, llm, initialized
 
     if not initialized:
@@ -221,9 +224,13 @@ def query_rag(question: str, agent_type: str = "EEBC Expert") -> str:
         template = AGENT_PROMPTS.get(agent_type, AGENT_PROMPTS["EEBC Expert"])
         prompt = ChatPromptTemplate.from_template(template)
 
+        search_kwargs = {"k": 20, "fetch_k": 40}
+        if metadata_filter:
+            search_kwargs["filter"] = metadata_filter
+
         retriever = vector_store.as_retriever(
             search_type="mmr",
-            search_kwargs={"k": 20, "fetch_k": 40},
+            search_kwargs=search_kwargs,
         )
 
         chain = (
